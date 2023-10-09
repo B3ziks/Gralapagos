@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html>
+<meta charset="UTF-8">
+
+
+<head>
+    <title>Oskar Runner</title>
+</head>
+
+<body>
+    <script>
+        //Stałe
+        var CANVAS_WIDTH = 1490;
+        var CANVAS_HEIGHT = 690;
+        var PLAYER_WITDH = 64;
+        var PLAYER_HEIGHT = 64;
+        var GROUND_Y = 540;
+        var PLAYER_Y_ACCELERATION = 1;
+        var SPACE_KEYCODE = 32;
+        var PLAYER_JUMP_SPEED = 22;
+        var PLAYER_X_SPEED = 6;
+        var BACKGROUND_WIDTH = 5000;
+        var GROUND_WIDTH = 1520;
+        var PLAYER_NR_FRAMES_PER_ROW = 5;
+        var PLAYER_NR_ANIMATION_FRAMES = 20;
+        var PLAYER_ANIMATION_SPEED = 0;
+        var BUSH_WIDTH = 114;
+        var BUSH_HEIGHT = 600;
+        var ENEMY_ANIMATION_SPEED = 2;
+        var ENEMY_NR_ANIMATION_FRAMES = 1;
+        var ENEMY_X_SPEED = 3;
+        var ENEMY_WIDTH = 80;
+        var ENEMY_HEIGHT = 73;
+        var MIN_DISTANCE_BETWEEN_ENEMY = 400;
+        var MAX_DISTANCE_BETWEEN_ENEMY = 1200;
+        var MAX_ACTIVE_ENEMY = 3;
+        var SCREENSHAKE_RADIUS = 16;
+        var PLAYER_MAX_HEALTH = 75;
+        var PLAY_GAME_MODE = 0;
+        var GAME_OVER_GAME_MODE = 1;
+
+        //Konfiguracja wstępna
+        var canvas = document.createElement('canvas');
+        var c = canvas.getContext('2d');
+        var playerYSpeed = 0;
+        var playerIsInTheAir = false;
+        var spaceKeyIsPressed = false;
+        var playerFrameNr = 0;
+        var gameFrameCounter = 0;
+        var playerHealth = PLAYER_MAX_HEALTH;
+        var gameMode = PLAY_GAME_MODE;
+
+        //Muzyka
+        var myMusic = new Audio()
+        myMusic.src = "music.mp3"
+        var hit = new Audio()
+        hit.src = "hit.mp3"
+        var jumpsound = new Audio()
+        jumpsound.src = "jump.mp3"
+
+        canvas.width = CANVAS_WIDTH;
+        canvas.height = CANVAS_HEIGHT;
+        document.body.appendChild(canvas);
+        cameraX = 0;
+        cameraY = 0;
+        screenshake = false;
+
+        //Ikonka
+        function change_favicon(img) {
+            var favicon = document.querySelector('link[rel="shortcut icon"]');
+            if (!favicon) {
+                favicon = document.createElement('link');
+                favicon.setAttribute('rel', 'shortcut icon');
+                var head = document.querySelector('head');
+                head.appendChild(favicon);
+            }
+            favicon.setAttribute('type', 'image/png');
+            favicon.setAttribute('href', img);
+        }
+        change_favicon('icon.ico');
+
+        //Postać
+        var playerImage = new Image();
+        playerImage.src = 'oskar0.png';
+        var oskarX = CANVAS_WIDTH / 2;
+        var oskarY = GROUND_Y - PLAYER_HEIGHT;
+        var playerSpriteSheet = {
+            nrFramesPerRow: 5,
+            spriteWidth: PLAYER_WITDH,
+            spriteHeight: PLAYER_HEIGHT,
+            image: playerImage
+        };
+
+        //Lampy (jendak nie krzaki)
+        var bush1Image = new Image();
+        bush1Image.src = 'krzak1.png';
+        var bushData = generateBushes();
+
+        //Wrogowie
+        var enemyImage = new Image();
+        enemyImage.src = 'enemy1.png';
+        var EnemySpriteSheet = {
+            nrFramesPerRow: 1,
+            spriteWidth: ENEMY_WIDTH,
+            spriteHeight: ENEMY_HEIGHT,
+            image: enemyImage
+        }
+        var enemyData = []
+
+        //Tło
+        var backgroundImage = new Image();
+        backgroundImage.src = 'background2.png';
+
+        //Ziemia
+        var groundImage = new Image();
+        groundImage.src = 'ground.png';
+
+        window.addEventListener('keydown', onKeyDown);
+        window.addEventListener('keyup', onKeyUp);
+        window.addEventListener('load', start);
+
+        function start() {
+            window.requestAnimationFrame(mainLoop);
+        }
+
+        function generateBushes() {
+            var generatedBushData = [];
+            var bushX = 0;
+            while (bushX < (2 * CANVAS_WIDTH)) {
+                var bushImage;
+                if (Math.random() >= 0.5) {
+                    bushImage = bush1Image;
+                }
+                generatedBushData.push({
+                    x: bushX,
+                    y: 160 + Math.random() * 20,
+                    image: bushImage
+                });
+                bushX += 150 + Math.random() * 600;
+            }
+            return generatedBushData;
+        }
+
+        var playerCollisionRectangle = {
+            xOffset: 60,
+            yOffsett: 20,
+            width: 64,
+            height: 64
+        };
+        var enemyCollisionRectangle = {
+            xOffset: 50,
+            yOffsett: 20,
+            width: 64,
+            height: 64
+        };
+
+        //Pętla główna
+        function mainLoop() {
+            uptade();
+            draw();
+            myMusic.play();
+            window.requestAnimationFrame(mainLoop);
+            c.fillStyle = 'white';
+            c.font = '10px verdana';
+            c.fillText('Naciśnij spację, by skoczyć!', 650, 630);
+        }
+
+        //Sterowanie
+        function onKeyDown(event) {
+            if (event.keyCode === SPACE_KEYCODE) {
+                spaceKeyIsPressed = true;
+            }
+        }
+
+        function onKeyUp(event) {
+            if (event.keyCode === SPACE_KEYCODE) {
+                spaceKeyIsPressed = false
+            }
+        }
+
+        //Aktualizacja
+        function uptade() {
+            gameFrameCounter = gameFrameCounter + 1;
+            oskarX = oskarX + PLAYER_X_SPEED;
+            if (spaceKeyIsPressed && !playerIsInTheAir) {
+                playerYSpeed = -PLAYER_JUMP_SPEED;
+                playerIsInTheAir = true;
+                jumpsound.play();
+            };
+
+            //Aktualizacja gracza
+            oskarY = oskarY + playerYSpeed;
+            playerYSpeed = playerYSpeed + PLAYER_Y_ACCELERATION;
+            if (oskarY > (GROUND_Y - PLAYER_HEIGHT)) {
+                oskarY = GROUND_Y - PLAYER_HEIGHT;
+                playerYSpeed = 0;
+                playerIsInTheAir = false;
+            }
+
+            //Aktualizacja animacji
+            playerFrameNr = playerFrameNr + 1;
+            if (playerFrameNr >= PLAYER_NR_ANIMATION_FRAMES) {
+                playerFrameNr = 0;
+            }
+
+            //Aktualizacja kamery
+            cameraX = oskarX - 150;
+            if ((gameFrameCounter % PLAYER_ANIMATION_SPEED) === 0) {
+                playerFrameNr = playerFrameNr + 1;
+                if (playerFrameNr >= PLAYER_NR_ANIMATION_FRAMES) {
+                    playerFrameNr = 0;
+                }
+            }
+
+            //Aktualizacja krzaków
+            for (var i = 0; i < bushData.length; i++) {
+                if ((bushData[i].x - cameraX) < -CANVAS_WIDTH) {
+                    bushData[i].x += (2 * CANVAS_WIDTH) + 150;
+                }
+            }
+
+            //Screenshake
+            screenshake = false;
+            var playerTouchedAnEnemy = uptadeEnemy();
+            if (playerTouchedAnEnemy) {
+                screenshake = true;
+                if (playerHealth > 0) playerHealth -= 1;
+            }
+
+            //Koniec gry
+            if (playerHealth <= 0) {
+                gameMode = GAME_OVER_GAME_MODE;
+                screenshake = false;
+            }
+        }
+
+        function uptadeEnemy() {
+            var playerTouchedAnEnemy = false;
+            for (var i = 0; i < enemyData.length; i++) {
+                if (doesPlayerOverlapEnemy(
+                        oskarX + playerCollisionRectangle.xOffset,
+                        oskarY + playerCollisionRectangle.yOffsett,
+                        playerCollisionRectangle.width,
+                        playerCollisionRectangle.height,
+                        enemyData[i].x + enemyCollisionRectangle.xOffset,
+                        enemyData[i].y + enemyCollisionRectangle.yOffsett,
+                        enemyCollisionRectangle.width,
+                        enemyCollisionRectangle.height
+                    )) {
+                    playerTouchedAnEnemy = true;
+                    hit.play();
+                }
+
+                enemyData[i].x -= ENEMY_X_SPEED;
+                if ((gameFrameCounter % ENEMY_ANIMATION_SPEED) === 0) {
+                    enemyData[i].frameNr = enemyData[i].frameNr + 1;
+                    if (enemyData[i].frameNr >= ENEMY_NR_ANIMATION_FRAMES) {
+                        enemyData[i].frameNr = 0;
+                    }
+                }
+
+                function doesPlayerOverlapEnemyAlongOneAxis(playerNearX, playerFarX, enemyNearX, enemyFarX) {
+                    var playerOverlapsNearEnemyEdge = (playerFarX >= enemyNearX) && (playerFarX <= enemyFarX);
+                    var playerOverlapsFarEnemyEdge = (playerNearX >= enemyNearX) && (playerNearX <= enemyFarX);
+                    var playerOverlapsNearEntireEnemy = (playerNearX <= enemyNearX) && (playerFarX >= enemyFarX);
+                    return playerOverlapsNearEnemyEdge || playerOverlapsFarEnemyEdge || playerOverlapsNearEntireEnemy;
+                }
+
+                function doesPlayerOverlapEnemy(oskarX, oskarY, playerWidth, playerHeight, enemyX, enemyY, enemyWidth, enemyHeight) {
+                    var playerOverlapsEnemyOnXAxis = doesPlayerOverlapEnemyAlongOneAxis(
+                        oskarX,
+                        oskarX + playerWidth,
+                        enemyX,
+                        enemyX + enemyWidth
+                    );
+                    var playerOverlapsEnemyOnYAxis = doesPlayerOverlapEnemyAlongOneAxis(
+                        oskarY,
+                        oskarY + playerHeight,
+                        enemyY,
+                        enemyY + enemyHeight);
+                    return playerOverlapsEnemyOnXAxis && playerOverlapsEnemyOnYAxis
+                }
+            }
+
+            //Wrogowie poza ekranem
+            var enemyIndex = 0;
+            while (enemyIndex < enemyData.length) {
+                if (enemyData[enemyIndex].x < cameraX - ENEMY_WIDTH) {
+                    enemyData.splice(enemyIndex, 1);
+                } else {
+                    enemyIndex += 1;
+                }
+            }
+            if (enemyData.length < MAX_ACTIVE_ENEMY) {
+                var lastEnemyX = CANVAS_WIDTH;
+                if (enemyData.length > 0) {
+                    lastEnemyX = enemyData[enemyData.length - 1].x;
+                }
+                var newEnemyX = lastEnemyX + MIN_DISTANCE_BETWEEN_ENEMY + Math.random() * (MAX_DISTANCE_BETWEEN_ENEMY - MIN_DISTANCE_BETWEEN_ENEMY);
+                enemyData.push({
+                    x: newEnemyX,
+                    y: GROUND_Y - ENEMY_HEIGHT,
+                    frameNr: 0
+                });
+            }
+            return playerTouchedAnEnemy;
+        }
+
+        //Rysowanie
+        function draw() {
+
+            //Wstrząs ekranem
+            var shakenCameraX = cameraX;
+            var shakenCameraY = cameraY;
+            if (screenshake) {
+                shakenCameraX += (Math.random() - .5) * SCREENSHAKE_RADIUS;
+                shakenCameraY += (Math.random() - .5) * SCREENSHAKE_RADIUS;
+            }
+
+            //Tło własne
+            var backgroundX = -(cameraX % BACKGROUND_WIDTH);
+            c.drawImage(backgroundImage, backgroundX, -200)
+            c.drawImage(backgroundImage, backgroundX + BACKGROUND_WIDTH, -200);
+
+            //Ziemia własna
+            var groundX = -(cameraX % GROUND_WIDTH);
+            c.drawImage(groundImage, groundX, 500)
+            c.drawImage(groundImage, groundX + GROUND_WIDTH, 500);
+
+            //Rysowanie lamp
+            for (var i = 0; i < bushData.length; i++) {
+                var currentBush = bushData[i];
+                c.drawImage(bush1Image, currentBush.x - shakenCameraX, GROUND_Y - currentBush.y - shakenCameraY);
+            }
+
+            //Rysowanie wroga
+            for (var i = 0; i < enemyData.length; i++) {
+                drawAnimatedSprite(enemyData[i].x - cameraX, enemyData[i].y - cameraY, enemyData[i].frameNr, EnemySpriteSheet);
+            }
+
+            //Rysowanie Oskara
+            drawAnimatedSprite(oskarX - cameraX, oskarY - cameraY, playerFrameNr, playerSpriteSheet);
+
+            //Odległość
+            var playerDistacne = oskarX / 100;
+            c.fillStyle = 'white';
+            c.font = '48px verdana';
+            c.fillText(playerDistacne.toFixed(0) + 'm', 20, 50);
+
+
+            //Pasek życia
+            c.strokeStyle = 'red';
+            c.strokeRect(1100, 20, 380, 30);
+            c.fillStyle = 'red';
+            c.fillRect(1100, 20, playerHealth / PLAYER_MAX_HEALTH * 380, 30);
+
+            //Przegrana
+            if (gameMode == GAME_OVER_GAME_MODE) {
+                c.fillStyle = 'white';
+                c.font = '96px verdana';
+                c.fillText('KONIEC GRY', 650, 300);
+                c.font = '48px verdana';
+                c.fillText('Twój wynik to ' + playerDistacne.toFixed(0) + 'm', 720, 380);
+                c.font = '30px verdana';
+                c.fillText('Wciśnij F5, by spróbować ponownie', 680, 420);
+
+                PLAYER_X_SPEED = 0;
+                PLAYER_JUMP_SPEED = 0;
+                ENEMY_X_SPEED = 0;
+                PLAYER_NR_ANIMATION_FRAMES = 0;
+
+                hit.stop()
+                jumpsound.stop()
+            }
+
+            function drawAnimatedSprite(screenX, screenY, frameNr, spriteSheet) {
+                var spriteSheetRow = Math.floor(frameNr / spriteSheet.nrFramesPerRow);
+                var spriteSheetColumn = frameNr % spriteSheet.nrFramesPerRow;
+                var spriteSheetX = spriteSheetColumn * spriteSheet.spriteWidth;
+                var spriteSheetY = spriteSheetRow * spriteSheet.spriteHeight;
+                c.drawImage(
+                    spriteSheet.image,
+                    spriteSheetX, spriteSheetY,
+                    spriteSheet.spriteWidth, spriteSheet.spriteHeight, screenX, screenY,
+                    spriteSheet.spriteWidth, spriteSheet.spriteHeight
+                );
+            }
+        }
+
+    </script>
+</body>
+
+</html>

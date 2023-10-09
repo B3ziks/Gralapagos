@@ -1,0 +1,174 @@
+body {
+  background: #434750;
+}
+
+.zdjecie {
+  border-radius: 20px 20px 20px 20px;
+  width: 300px;
+  height: 320px;
+  margin-left: -15%;
+  margin-top: 5%;
+
+}
+
+.logo {
+  border-radius: 20px 20px 20px 20px;
+  width: 15%;
+  height: 15%;
+  margin-left: 0%;
+  margin-top: 5%;
+}
+
+.logoStr {
+  border-radius: 20px 20px 20px 20px;
+  width: 10%;
+  height: 10%;
+  margin-left: 0%;
+  margin-top: 5%;
+}
+
+div {
+  width: 50%;
+  border-radius: 20px 20px 20px 20px;
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.flex-container {
+  display: contents;
+}
+
+.flex-container>div {
+  padding: 20px;
+  margin: 20px;
+}
+
+h1 {
+  font-size: 3em;
+  letter-spacing: 1px;
+  font-family: 'Montserrat', sans-serif;
+  text-shadow: 4px 4px 6px rgba(66, 68, 90, 1);
+  color: white;
+}
+
+b {
+  font-size: 1.3em;
+  letter-spacing: 1px;
+  font-weight: bold;
+  text-align: center;
+  font-family: 'Montserrat', sans-serif;
+  text-shadow: 4px 4px 6px rgba(66, 68, 90, 1);
+  color: white;
+}
+
+p {
+  font-size: 1em;
+  text-align: center;
+  letter-spacing: 1px;
+  font-family: 'Montserrat', sans-serif;
+  text-shadow: 4px 4px 6px rgba(66, 68, 90, 1);
+  color: white;
+}
+
+
+button {
+
+  border: 0;
+  background: none;
+  display: block;
+  margin: 20px auto;
+  text-align: center;
+  border: 2px solid #27fefb;
+  padding: 14px 40px;
+  outline: none;
+  color: white;
+  border-radius: 24px;
+  transition: 0.25s;
+  cursor: pointer;
+}
+
+.container {
+  max-width: 950px;
+  width: 100%;
+  overflow: hidden;
+  padding: 10px 0;
+}
+
+.container .main-card {
+  display: flex;
+  justify-content: space-evenly;
+  width: 100%;
+  transition: 1s;
+}
+
+#two:checked~.main-card {
+  margin-left: 100%;
+  
+}
+
+.container .main-card .cards {
+  width: calc(150% / 2 - 10px);
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 20px;
+  justify-content: space-between;
+}
+
+.main-card .cards .card {
+  width: calc(200% / 3 - 10px);
+  background: #2e3133;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.25);
+  transition: all 0.4s ease;
+}
+
+.main-card .cards .card:hover {
+  transform: translateY(-15px);
+}
+
+.cards .card .content {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.cards .card .content .img {
+  height: 130px;
+  width: 130px;
+  border-radius: 50%;
+  padding: 3px;
+  background: #434750;
+  margin-bottom: 14px;
+}
+
+.card .content .img img {
+  height: 100%;
+  width: 100%;
+  border: 3px solid #ffff;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.card .content .name {
+  font-size: 20px;
+  font-weight: 500;
+  color: #fff;
+  font-family: 'Permanent Marker'
+}
+
+.card .content .job {
+  font-size: 15px;
+  color: #b58adb;
+  font-family: 'Permanent Marker'
+}
+
+.card .content .media-icons {
+  margin-top: 10px;
+  display: flex;
+
+}
